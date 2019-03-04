@@ -1,0 +1,199 @@
+---
+title: "MKTGProject"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+Loading the necessary packages
+```{r}
+library(knitr)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(corrplot)
+library(caret)
+library(gridExtra)
+library(scales)
+library(Rmisc)
+library(ggrepel)
+library(randomForest)
+library(psych)
+library(xgboost)
+library(wesanderson)
+
+```
+Reading the train and the test data from the Working directory
+```{r}
+train <- read.csv("./train.csv", stringsAsFactors = F)
+test <- read.csv("./test.csv", stringsAsFactors = F)
+```
+To understand the dimension of the train data
+```{r}
+dim(train)
+```
+Looking at the first 10 variables and the Y variable to predict
+```{r}
+str(train[,c(1:10, 81)]) 
+```
+
+
+Finding out the rows that have missing values in some or the other column
+```{r}
+# list rows of data that have missing values 
+missing_row <- train[!complete.cases(train),]
+head(missing_row)
+```
+
+
+Alley has most of the missing values. We decided to remove it. 
+
+```{r}
+train = subset(train, select = -c(Alley,LotFrontage,MasVnrArea,GarageYrBlt) )
+train[complete.cases(train),]
+```
+
+
+```{r}
+numeric_train <- Filter(is.numeric, train)
+numeric_train
+
+```
+
+```{r}
+
+#all_numVar <- all[, numericVars]
+cor_numVar <- cor(numeric_train, use="pairwise.complete.obs") #correlations of all numeric variables
+
+#sort on decreasing correlations with SalePrice
+cor_sorted <- as.matrix(sort(cor_numVar[,'SalePrice'], decreasing = TRUE))
+ #select only high corelations
+CorHigh <- names(which(apply(cor_sorted, 1, function(x) abs(x)>0.3)))
+cor_numVar <- cor_numVar[CorHigh, CorHigh]
+
+corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt")
+```
+
+```{r}
+m = lm(SalePrice ~ . , data=numeric_train)
+summary(m)
+
+select_var <- c('Id','MSZoning','Utilities', 'Neighborhood','BldgType','HouseStyle',
+                'OverallQual','OverallCond','YearBuilt', 'ExterQual','ExterCond',
+                'BsmtQual','BsmtCond','TotalBsmtSF','Heating','HeatingQC', 
+                'CentralAir','Electrical','GrLivArea','BedroomAbvGr','KitchenAbvGr',
+                'KitchenQual','TotRmsAbvGrd','Functional','Fireplaces','FireplaceQu',
+               'GarageArea','GarageQual','GarageCond','OpenPorchSF','PoolArea',
+                'Fence','MoSold','YrSold','SaleType','SaleCondition','SalePrice')
+```
+
+```{r}
+selected_train <- train[,select_var]
+summary(selected_train)
+```
+
+```{r}
+hist(selected_train$SalePrice, xlab = "Sale Price", main = "Histogram of sale price of houses")
+title()
+```
+
+```{r}
+hist(log(selected_train$SalePrice))
+```
+
+```{r}
+#boxplot of SalePrice by MSZoning
+#add average value of SalePrice as red point
+ggplot(selected_train, aes(x=MSZoning, y=SalePrice, fill=MSZoning)) + 
+  geom_boxplot(alpha=0.3) +
+  stat_summary(fun.y=mean, geom="point", shape=20, size=4, color="red", fill="red")+
+  theme(legend.position="none") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_x_discrete(labels=c("C(all)" = "Commercial", "FV" = "Floating Village Residential",
+                              "RH" = "Residential High Density", "RL" = "Residential Low Density", "RM" = "Residential Medium Density")) +
+  theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=10))
+  
+```
+The graph above shows the distribution of SalePrice by MSZoning. The sales in "Floating Village Residential" area have the highest average sale price, and then followed by "Residential Low Density". While "Commercial" sales have the lowest average sale price. 
+
+It is quite strange that commercial area has the lowest average Sale Price while village area has the highest. One possible explanation could be SalePrice is also related to the size of houses. To confirm, let's explore the average size in these area.
+
+```{r}
+#alpha=0.3
+ggplot(selected_train, aes(x=MSZoning, y=GrLivArea, fill=MSZoning)) + 
+  geom_bar(stat = "identity") +
+  stat_summary(fun.y=mean, geom="point", shape=20, size=4, color="red", fill="red")+
+  theme(legend.position="none")+
+  ggtitle("Figure 4 Boxplot of SalePrice by MSZoning")+
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+```{r}
+library(plyr)
+
+ddply(selected_train, .(MSZoning), summarize,  size=mean(GrLivArea))
+```
+```{r}
+ggplot(data=selected_train, aes(x=GrLivArea, y=SalePrice))+
+        geom_point(col='blue') + geom_smooth(method = "lm", se=FALSE, color="black", aes(group=1)) +
+        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+```
+
+
+Looking at the above data, we can see that Commercial Housing area is very small which could be a reason for lesser sales price. 
+
+Explore the distribution of SalePrice by BldfType
+```{r}
+library(plyr)
+ddply(train, .(BldgType), summarize,Total = length(BldgType),Max_price=max(SalePrice),Min_price=min(SalePrice))
+```
+
+```{r}
+ht <- ggplot(selected_train, aes(SalePrice)) +
+ geom_histogram(aes(fill = BldgType), position = position_stack(reverse = TRUE), binwidth = 20000) + scale_x_continuous(labels = comma)+ ggtitle(" Histogram of SalePrice") +
+ ylab("Count") +
+ xlab("Sale Price") + 
+ theme(plot.title = element_text(hjust = 0.5),legend.position=c(0.9,0.8), legend.background = element_rect(fill="grey90",size=0.5, linetype="solid", colour ="black"))
+
+ht + scale_fill_manual(values=wes_palette(n=5, name="Moonrise3")) 
+
+```
+
+
+More thoughts about the graph above:
+
+For houses with type of Single-family Detached, most of their prices are within the range from 50000 to 300000
+For Two-family Conversion, Duplex, Townhouse End Unit and Townhouse Inside Unit, most of house prices are ranging from 75000 to 210000
+The highest and lowest house price both come to Single-family Detached house type
+
+
+```{r}
+ggplot(selected_train, aes(x = SalePrice,fill = as.factor(OverallQual))) +
+  geom_histogram(position = "stack", binwidth = 10000) +
+  ggtitle("Figure 6 Histogram of SalePrice") +
+  ylab("Count") +
+  xlab("Housing Price") + 
+  scale_fill_discrete(name="OverallQual")+
+  theme(plot.title = element_text(hjust = 0.5), legend.position=c(0.9,0.7), legend.background = element_rect(fill="grey90",
+                                                                                                           size=0.5, linetype="solid", 
+                                                                                                           colour ="black"))
+```
+As we saw in graph above:
+
+Most houese are with OverallQuall of 4,5,6 and 7, equivalent to "Below Average", "Average", "Above Average" and "Good"
+The higher rate of overall quality, the higher house sale price
+For each rate level of overall quality, the distribution of house price is almost symmetric
+
+```{r}
+
+```
+
