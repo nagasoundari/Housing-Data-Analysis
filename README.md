@@ -16,6 +16,6 @@ The dataset consists of features in various formats. It has numerical data such 
 We individually analyzed our dependent variable and all the important independent variables we considered using different plots to get a sense of their range, mean, median and other features. The independent variables we considered are Overall quality, External factors(Zoning Classification and Ground Living Area), Internal factors(Building type) and Aesthetic factors(Bathroom, Kitchen) along with the dependent variable saleprice.
 
 **Machine learning models applied:**
-We first normalized the data by applying logarithm and then built different models like linear regression, decision tree, random forest and other ensemble techniques(randomForest, adaboost). The code snippets for these models could be found in the files _BostonHousingData_analysis_2.Rmd and BostonHousingData_DT.Rmd_. We also predicted the prices of the houses using the models built and estimated its acuuracy. 
+We first normalized the data by applying logarithm and then built different models like linear regression, decision tree, random forest and other ensemble techniques(randomForest, adaboost). The code snippets for these models could be found in the files [Analysis](BostonHousingData_analysis_2.Rmd) and [Algorithm](BostonHousingData_DT.Rmd). We also predicted the prices of the houses using the models built and estimated its acuuracy. 
 
-[Detailed description of this project](BostonHousingData_analysis.pdf) has the detailed description of the project with visualizations and recommendations provided.
+[Link to Detailed description](BostonHousingData_analysis.pdf) has the detailed description of the project with visualizations and recommendations provided.
