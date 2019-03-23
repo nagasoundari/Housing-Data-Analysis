@@ -18,4 +18,4 @@ We individually analyzed our dependent variable and all the important independen
 **Machine learning models applied:**
 We first normalized the data by applying logarithm and then built different models like linear regression, decision tree, random forest and other ensemble techniques(randomForest, adaboost). The code snippets for these models could be found in the files _BostonHousingData_analysis_2.Rmd and BostonHousingData_DT.Rmd_. We also predicted the prices of the houses using the models built and estimated its acuuracy. 
 
-
+[Detailed description of this project](BostonHousingData_analysis.pdf) has the detailed description of the project with visualizations and recommendations provided.
