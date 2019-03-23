@@ -1,0 +1,150 @@
+---
+title: "Final Project - Housing Data"
+author: "Naga Soundari Balamurugan"
+date: "November 30, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#Read the data files
+testData <- read.csv("test.csv")
+trainData <- read.csv("train.csv")
+
+nrow(trainData)
+ncol(trainData)
+str(trainData)
+
+
+trainDataHousing <- data.frame(lapply(trainData, function(x) as.numeric(x)))
+
+corTestVal <- cor(trainDataHousing, trainDataHousing$SalePrice)
+corTestVal[order(-corTestVal[,1]),] 
+
+lm_highCorr <- lm(SalePrice ~ OverallQual + GrLivArea + GarageCars + GarageArea
+                   + TotalBsmtSF + X1stFlrSF + FullBath + TotRmsAbvGrd + YearBuilt
+                   + YearRemodAdd + Fireplaces + BsmtFinSF1 + Foundation + WoodDeckSF
+                   + X2ndFlrSF + OpenPorchSF + HeatingQC + KitchenQual + 
+                    ExterQual, data = trainDataHousing)
+#Multiple R-squared:  0.8084481,	Adjusted R-squared:  0.8059207
+plot(lm_highCorr$residuals, main = "Residual plot of high correlation factor linear model")
+abline(h = 0, col = "red")
+
+
+lm_allfactor <- lm(SalePrice ~ OverallQual + GrLivArea + GarageCars + GarageArea
+                   + TotalBsmtSF + X1stFlrSF + FullBath + TotRmsAbvGrd + YearBuilt
+                   + YearRemodAdd + Fireplaces + BsmtFinSF1 + Foundation + WoodDeckSF
+                   + X2ndFlrSF + OpenPorchSF + HalfBath + LotArea + CentralAir + PavedDrive + 
+        BsmtFullBath + RoofStyle +  BsmtUnfSF +  SaleCondition + HouseStyle +   Neighborhood +   BedroomAbvGr   +     RoofMatl  + ExterCond + Functional  + ScreenPorch  +  Exterior2nd  +   Exterior1st   +   PoolArea + Condition1  +   LandSlope   +   MoSold  + X3SsnPorch  + Street +
+        LandContour +  Condition2 +  BsmtFinSF2  + Utilities  + BsmtHalfBath + 
+        MiscVal   +     Id + LowQualFinSF  +  YrSold  +   SaleType + 
+        LotConfig  +   OverallCond  +    MSSubClass   +     BldgType   +      Heating +
+        EnclosedPorch  +  KitchenAbvGr   +     MSZoning    +    LotShape +
+        HeatingQC + KitchenQual + ExterQual,
+                   data = trainDataHousing)
+#Multiple R-squared:  0.8371909,	Adjusted R-squared:  0.8303297
+
+plot(lm_allfactor$residuals, main = "Residual plot of All factor linear model")
+abline(h = 0, col = "red")
+
+##################################################################
+
+lm_selected <- lm(SalePrice ~ OverallQual + GarageCars + X1stFlrSF + TotRmsAbvGrd + 
+                           YearBuilt + Fireplaces + WoodDeckSF + X2ndFlrSF + LotArea + 
+                           BsmtFullBath + RoofStyle +  SaleCondition + Neighborhood +   
+                           BedroomAbvGr +  RoofMatl  +  Functional  + ScreenPorch  +  
+                           Exterior1st   +  LandSlope + Street + LandContour +  
+                           Condition2 + YrSold  + OverallCond  + MSSubClass  + 
+                           KitchenAbvGr +  KitchenQual + ExterQual, data = trainDataHousing)
+#Multiple R-squared:  0.8322172,	Adjusted R-squared:  0.8289343 
+
+plot(lm_selected$residuals, main = "Residual plot of selected factor linear model")
+abline(h = 0, col = "red")
+
+selectedVariables <- c("OverallQual", "GarageCars", "X1stFlrSF", "TotRmsAbvGrd", "YearBuilt", "Fireplaces", "WoodDeckSF", "X2ndFlrSF", "LotArea", "BsmtFullBath", "RoofStyle",  "SaleCondition", 
+                       "Neighborhood", "BedroomAbvGr",  "RoofMatl",  "Functional", "ScreenPorch", "Exterior1st","LandSlope", "Street", "LandContour", "Condition2", "YrSold", "OverallCond", "MSSubClass", "KitchenAbvGr", "KitchenQual", "ExterQual")
+
+testDataNew <- testData[selectedVariables]
+trainDataFilteres <- trainDataHousing[selectedVariables]
+
+testDataNew <- data.frame(lapply(testDataNew, function(x) as.numeric(x)))
+
+predictions <- predict(lm_selected, testDataNew)
+
+
+lm_good <- lm(SalePrice ~ OverallQual +  GrLivArea + TotalBsmtSF + YearRemodAdd + Neighborhood, 
+              data = trainDataHousing)
+
+
+lm_good1 <- lm(SalePrice ~ OverallQual +  GrLivArea + TotalBsmtSF + YearRemodAdd + 
+                 Neighborhood + GarageCars, 
+              data = trainDataHousing)
+
+
+
+
+tree_highCorr <- tree(SalePrice ~ OverallQual + GrLivArea + GarageCars + GarageArea
+                   + TotalBsmtSF + X1stFlrSF + FullBath + TotRmsAbvGrd + YearBuilt
+                   + YearRemodAdd + Fireplaces + BsmtFinSF1 + Foundation + WoodDeckSF
+                   + X2ndFlrSF + OpenPorchSF + HeatingQC + KitchenQual + ExterQual,
+                   data = trainDataHousing)
+tree_highCorr
+summary(tree_highCorr)
+plot(tree_highCorr)
+text(tree_highCorr, pretty = 0)
+
+tree_allFactor <- tree(SalePrice ~ OverallQual + GrLivArea + GarageCars + GarageArea
+                   + TotalBsmtSF + X1stFlrSF + FullBath + TotRmsAbvGrd + YearBuilt
+                   + YearRemodAdd + Fireplaces + BsmtFinSF1 + Foundation + WoodDeckSF
+                   + X2ndFlrSF + OpenPorchSF + HalfBath + LotArea + CentralAir + PavedDrive + 
+        BsmtFullBath + RoofStyle +  BsmtUnfSF +  SaleCondition + HouseStyle +   Neighborhood +   BedroomAbvGr   +     RoofMatl    +   ExterCond + Functional  + ScreenPorch  +  Exterior2nd  +   Exterior1st   +   PoolArea + Condition1  +   LandSlope   +   MoSold  + X3SsnPorch  + Street +
+        LandContour +  Condition2 +  BsmtFinSF2  + Utilities  + BsmtHalfBath + 
+        MiscVal   +     Id + LowQualFinSF  +  YrSold  +   SaleType + 
+        LotConfig  +   OverallCond  +    MSSubClass   +     BldgType   +      Heating +
+        EnclosedPorch  +  KitchenAbvGr   +     MSZoning    +    LotShape +
+        HeatingQC + KitchenQual + ExterQual,
+                   data = trainDataHousing)
+
+tree_allFactor
+summary(tree_allFactor)
+plot(tree_allFactor)
+text(tree_allFactor, pretty = 0)
+
+
+#Pruning the tree
+cv_tree_allFactor <- cv.tree(tree_allFactor)
+names(cv_tree_allFactor)
+cv_tree_allFactor
+
+#Plot error rate as function of both size of terminal nodes and k
+par(mfrow = c(1,2))
+plot(cv_tree_allFactor$size, cv_tree_allFactor$dev, type = "b")
+plot(cv_tree_allFactor$k, cv_tree_allFactor$dev, type = "b")
+
+
+model_rf <- randomForest(SalePrice ~ OverallQual + GrLivArea + GarageCars + GarageArea
+                   + TotalBsmtSF + X1stFlrSF + FullBath + TotRmsAbvGrd + YearBuilt
+                   + YearRemodAdd + Fireplaces + BsmtFinSF1 + Foundation + WoodDeckSF
+                   + X2ndFlrSF + OpenPorchSF + HalfBath + LotArea + CentralAir + PavedDrive + 
+        BsmtFullBath + RoofStyle +  BsmtUnfSF +  SaleCondition + HouseStyle +   Neighborhood +   BedroomAbvGr   +     RoofMatl    +   ExterCond + Functional  + ScreenPorch  +  Exterior2nd  +   Exterior1st   +   PoolArea + Condition1  +   LandSlope   +   MoSold  + X3SsnPorch  + Street +
+        LandContour +  Condition2 +  BsmtFinSF2  + Utilities  + BsmtHalfBath + 
+        MiscVal   +     Id + LowQualFinSF  +  YrSold  +   SaleType + 
+        LotConfig  +   OverallCond  +    MSSubClass   +     BldgType   +      Heating +
+        EnclosedPorch  +  KitchenAbvGr   +     MSZoning    +    LotShape +
+        HeatingQC + KitchenQual + ExterQual, data = trainDataHousing, 
+                         importance=TRUE, proximity=TRUE)
+
+
+summary(model_rf)
+
+plot(lm_selected)
+
+
+
+
+
+```
+
